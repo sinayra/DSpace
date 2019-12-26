@@ -13,6 +13,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Iterator;
 import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
@@ -90,6 +92,30 @@ public class TematresUtil
 	private void markAllHierarchyRelations(TematresTermDirectedGraph g){
 		
 	}
+
+	/**
+     * Set a Tematres term object from JSON
+     * 
+     */
+	private void setTematresTerm(JSONObject JSONterm, TematresTerm term){
+		
+		for(String key : JSONterm.keySet()){
+			System.out.println("key: " + key);
+			Object value = JSONterm.get(key);
+			System.out.println("value: " + value.toString());				
+			switch(key){
+				case "term_id":
+					term.setId(Integer.parseInt(value.toString()));
+					break;
+				case "string":
+					term.setName(value.toString());
+					break;
+				case "isMetaTerm":
+					term.setIsMetaTerm(Integer.parseInt(value.toString()) == 1);
+					break;
+			}
+		}			
+	}
 	
 	/**
      * Create a directed Graph with terms
@@ -111,7 +137,6 @@ public class TematresUtil
 			TematresTerm starting = null, finishing = null;
 			TematresTermDirectedGraph.NodeClass nStarting = null, nFinishing = null;
 
-			
 			for(String key : JSONelem.keySet()){
 				System.out.println("key: " + key);
 				Object value = JSONelem.get(key);
@@ -165,22 +190,7 @@ public class TematresUtil
 			JSONObject JSONterm = (JSONObject)result.get(id);
 			TematresTerm newTerm = new TematresTerm();
 			
-			for(String key : JSONterm.keySet()){
-				System.out.println("key: " + key);
-				Object value = JSONterm.get(key);
-				System.out.println("value: " + value.toString());				
-				switch(key){
-					case "term_id":
-						newTerm.setId(Integer.parseInt(value.toString()));
-						break;
-					case "string":
-						newTerm.setName(value.toString());
-						break;
-					case "isMetaTerm":
-						newTerm.setIsMetaTerm(Integer.parseInt(value.toString()) == 1);
-						break;
-				}
-			}			
+			setTematresTerm(JSONterm, newTerm);			
 			
 			terms.put(newTerm.getId(), newTerm);
 		}
@@ -189,7 +199,12 @@ public class TematresUtil
 		
 		return terms;
 	}
-
+	
+	/**
+     * Get all terms from Tematres and creates the HTML for each
+     * 
+     * @return a string to be rendered
+     */
 	public String renderAllTermsAsHTML(){
 		String html = "";
 		HashMap<Integer, TematresTerm> terms = getAllTerms();
@@ -211,6 +226,66 @@ public class TematresUtil
 		System.out.println("</HTML>");
 		
 		return html;
+	}
+	
+	/**
+     * Check if a term exists in Tematres
+     * 
+     * @return if there is a result for the search
+     */
+	public boolean isTematresSearch(String query){
+		String args ="task=fetch&arg=" + query;
+		JSONObject data = getResponseData(args);
+
+		try{
+			JSONObject result = data.getJSONObject("result");
+			String id = result.keySet().iterator().next();
+			JSONObject JSONterm = (JSONObject)result.get(id);
+			System.out.println("IS TEMATRES SEARCH: " + JSONterm.isNull("term_id"));
+			if(JSONterm.isNull("term_id")){
+				return false;			
+			}
+		}
+		catch(Exception e){
+			return false;		
+		}
+
+		return true;
+	}
+
+	/**
+     * Get all related terms
+     * 
+     * @return a list of terms name
+     */
+	public List<String> getRelatedList(String query){
+		List<String> names = new ArrayList<String>();
+
+		String args ="task=fetch&arg=" + query;
+		JSONObject data = getResponseData(args);
+		JSONObject result = data.getJSONObject("result");
+		TematresTerm term = new TematresTerm();
+
+		String id = result.keySet().iterator().next();
+		System.out.println("id: " + id);
+		JSONObject JSONterm = (JSONObject)result.get(id);
+		setTematresTerm(JSONterm, term);
+
+		args = "task=fetchRelated&arg=" + term.getId();
+		data = getResponseData(args);
+		result = data.getJSONObject("result");
+
+		for(String relatedId : result.keySet()){
+			System.out.println("id: " + relatedId);
+			JSONterm = (JSONObject)result.get(relatedId);
+			TematresTerm newTerm = new TematresTerm();
+			
+			setTematresTerm(JSONterm, newTerm);			
+			
+			names.add(newTerm.getName());
+		}
+		
+		return names;
 	}
 
 }
