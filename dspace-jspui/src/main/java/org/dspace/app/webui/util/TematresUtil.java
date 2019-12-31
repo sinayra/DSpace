@@ -48,6 +48,7 @@ public class TematresUtil
 	private final String PLUS_IMAGE = "/jspui/image/controlledvocabulary/p.gif";
 	private final String FINAL_IMAGE = "/jspui/image/controlledvocabulary/f.gif";
 
+
     /**
      * Get Response from URL
      * 
@@ -85,13 +86,6 @@ public class TematresUtil
 		return data;
     }
     
-    /**
-     * Mark hierarchy nodes from graph
-     * 
-     */
-	private void markAllHierarchyRelations(TematresTermDirectedGraph g){
-		
-	}
 
 	/**
      * Set a Tematres term object from JSON
@@ -100,9 +94,7 @@ public class TematresUtil
 	private void setTematresTerm(JSONObject JSONterm, TematresTerm term){
 		
 		for(String key : JSONterm.keySet()){
-			System.out.println("key: " + key);
 			Object value = JSONterm.get(key);
-			System.out.println("value: " + value.toString());				
 			switch(key){
 				case "term_id":
 					term.setId(Integer.parseInt(value.toString()));
@@ -128,29 +120,34 @@ public class TematresUtil
 		JSONObject data = getResponseData(args);
 		JSONArray result = data.getJSONArray("result");
 
-		
-		System.out.println("<CREATE ALL HIERARCHY RELATIONS>");
-
 		Iterator<Object> it = result.iterator();
 		while(it.hasNext()){
 			JSONObject JSONelem = (JSONObject)it.next();
 			TematresTerm starting = null, finishing = null;
+			String relType = "";
 			TematresTermDirectedGraph.NodeClass nStarting = null, nFinishing = null;
 
 			for(String key : JSONelem.keySet()){
-				System.out.println("key: " + key);
 				Object value = JSONelem.get(key);
-				System.out.println("value: " + value.toString());
-				if(key.equals("lterm_id") || key.equals("rterm_id")){
-					Integer id = Integer.parseInt(value.toString());
-					if(terms.containsKey(id)){
-						if(key.equals("lterm_id")){
+				String valueStr = value.toString();
+				Integer id = 0;
+				
+				switch(key){
+					case "lterm_id":
+						id = Integer.parseInt(valueStr);
+						if(terms.containsKey(id)){
 							starting = terms.get(id);
 						}
-						else{
+						break;
+					case "rterm_id":
+						id = Integer.parseInt(valueStr);
+						if(terms.containsKey(id)){
 							finishing = terms.get(id);
 						}
-					}
+						break;
+					case "relType":
+						relType = valueStr;
+						break;		
 				}
 			}
 			
@@ -162,12 +159,10 @@ public class TematresUtil
 			}
 			
 			if(nStarting != null && nFinishing != null){
-				g.addEdges(nStarting, nFinishing);
+				g.addEdges(nStarting, nFinishing, relType);
 			}
 			
 		}
-
-		System.out.println("</CREATE ALL HIERARCHY RELATIONS>");
 		
 		return g;
 	}
@@ -183,10 +178,7 @@ public class TematresUtil
 		JSONObject data = getResponseData(args);
 		JSONObject result = data.getJSONObject("result");
 		
-		System.out.println("<SET ALL TERMS>");
-		System.out.println(data.toString());
 		for(String id : result.keySet()){
-			System.out.println("id: " + id);
 			JSONObject JSONterm = (JSONObject)result.get(id);
 			TematresTerm newTerm = new TematresTerm();
 			
@@ -194,10 +186,142 @@ public class TematresUtil
 			
 			terms.put(newTerm.getId(), newTerm);
 		}
-
-		System.out.println("</SET ALL TERMS>");
 		
 		return terms;
+	}
+	
+	/**
+     * Depth-first search from src setting each vertex to visited
+     * 
+     */
+	private	void DFS(TematresTermDirectedGraph.NodeClass src){
+		src.setVisited(true);
+		
+		Iterator<TematresTermDirectedGraph.EdgeContents> edgeSet = src.getEdges().iterator();
+		while(edgeSet.hasNext()){
+			TematresTermDirectedGraph.NodeClass n = edgeSet.next().getFinishingNode();
+			if(!n.getVisited()){
+				DFS(n);
+			}
+		}
+	}
+
+	/**
+     * Find node that can reach all nodes
+     * 
+     * @return mother node
+     */
+	private TematresTermDirectedGraph.NodeClass findMother(TematresTermDirectedGraph g){
+		Iterator<TematresTermDirectedGraph.NodeClass> it = null;
+		TematresTermDirectedGraph.NodeClass mother = null;
+
+		//setting every node to not visited
+		g.setAllNodesNotVisited();
+		
+		//for each node
+		it = g.getAllNodes().iterator();
+		while(it.hasNext()){
+			TematresTermDirectedGraph.NodeClass n = it.next();
+
+			//if this node was not visited
+			if(!n.getVisited()){
+				DFS(n);	//visit and mark every node reachable from it
+				mother = n; //and it must be the mother
+			}
+		}
+		
+		//reseting every node to not visited and try another DFS from the mother
+		g.setAllNodesNotVisited();
+		DFS(mother);
+		
+		//checking if every node was reached from mother
+		it = g.getAllNodes().iterator();
+		while(it.hasNext()){
+			TematresTermDirectedGraph.NodeClass n = it.next();
+			if(!n.getVisited()){
+				mother = null; //in the end, there is other nodes not reachable from mother
+				break;
+			}	
+		}
+
+		return mother;
+	}
+
+	private String getHierarchyHTML(boolean hasHierarchy, TematresTerm term){
+		String html = "";
+
+		if(hasHierarchy){
+			html += "<li>";
+			html += "<img class=\"controlledvocabulary\" src=\"" + PLUS_IMAGE + "\" onclick=\"ec(this, '/jspui');\" alt=\"expand search term category\"/>";
+			html += "<a id=\"" + term.getId() + "\" href=\"javascript:void(null);\" onclick=\"javascript: i(this);\" class=\"value\">" + term.getName() + "</a>";
+			html += "<ul class=\"controlledvocabulary\">";		
+		}
+		else{
+			html += "<li>";
+			html += "<img class=\"dummyclass\" src=\"" + FINAL_IMAGE + "\" alt=\"search term\"/>";
+			html += "<a id=\"" + term.getId() + "\" href=\"javascript:void(null);\" onclick=\"javascript: i(this);\" class=\"value\">" + term.getName() + "</a>";
+			html += "</li>";
+		}
+
+		return html;
+	}
+
+	/**
+     * Depth-first search from src rendering each vertex
+     * 
+     */
+
+	private String DFSRenderHTMLHelper(TematresTermDirectedGraph g, TematresTermDirectedGraph.NodeClass src){
+		Iterator<TematresTermDirectedGraph.EdgeContents> edgeSet = src.getEdges().iterator();
+		String html = "";
+		TematresTerm term = src.getTerm();
+		boolean hasRendered = false;
+		List<TematresTermDirectedGraph.NodeClass> relatedNodes = new ArrayList<TematresTermDirectedGraph.NodeClass>();
+
+		if(!edgeSet.hasNext()){
+			html += getHierarchyHTML(false, term);
+			src.setVisited(true);
+		}
+		else{
+			while(edgeSet.hasNext()){
+				TematresTermDirectedGraph.EdgeContents relation = edgeSet.next();
+				TematresTermDirectedGraph.NodeClass n = relation.getFinishingNode();
+
+				if(!src.getVisited() && !(relation.getRelType().equals("TR"))){
+					html += getHierarchyHTML(true, term);
+					src.setVisited(true);
+					html += DFSRenderHTMLHelper(g, n);
+					html += "</ul>";
+					html += "</li>";
+				}
+				else{
+					if(!n.getAddedToList() && !n.getVisited()){
+						n.setAddedToList(true);
+						relatedNodes.add(n);
+					}
+				}
+			}
+			if(!relatedNodes.isEmpty()){
+				Iterator<TematresTermDirectedGraph.NodeClass> it = relatedNodes.iterator();
+				while(it.hasNext()){
+					TematresTermDirectedGraph.NodeClass n = it.next();
+					html += DFSRenderHTMLHelper(g, n);
+
+					if(!n.getVisited()){
+						html += getHierarchyHTML(false, n.getTerm());
+						n.setVisited(true);
+					}
+				}
+			}
+		}
+
+		return html;
+	}
+
+	private	String DFSRenderHTML(TematresTermDirectedGraph g, TematresTermDirectedGraph.NodeClass src){
+		g.setAllNodesNotVisited();
+		String html = DFSRenderHTMLHelper(g, src);
+		return html;
 	}
 	
 	/**
@@ -209,21 +333,14 @@ public class TematresUtil
 		String html = "";
 		HashMap<Integer, TematresTerm> terms = getAllTerms();
 		TematresTermDirectedGraph g = createAllHierarchyRelations(terms);
+		TematresTermDirectedGraph.NodeClass motherNode = findMother(g);
+
 		
 		html += "<ul class=\"controlledvocabulary\">";
 
-		for(TematresTerm value : terms.values()){
-			html += "<li>";
-			html += "<img class=\"dummyclass\" src=\"" + FINAL_IMAGE + "\" alt=\"search term\"/>";
-			html += "<a id=\"" + value.getId() + "\" href=\"javascript:void(null);\" onclick=\"javascript: i(this);\" class=\"value\">" + value.getName() + "</a>";
-			html += "</li>";
-		}
+		html += DFSRenderHTML(g, motherNode);
 		
 		html += "</ul>";
-
-		System.out.println("<HTML>");
-		System.out.println(html);
-		System.out.println("</HTML>");
 		
 		return html;
 	}
@@ -241,7 +358,6 @@ public class TematresUtil
 			JSONObject result = data.getJSONObject("result");
 			String id = result.keySet().iterator().next();
 			JSONObject JSONterm = (JSONObject)result.get(id);
-			System.out.println("IS TEMATRES SEARCH: " + JSONterm.isNull("term_id"));
 			if(JSONterm.isNull("term_id")){
 				return false;			
 			}
@@ -267,7 +383,7 @@ public class TematresUtil
 		TematresTerm term = new TematresTerm();
 
 		String id = result.keySet().iterator().next();
-		System.out.println("id: " + id);
+
 		JSONObject JSONterm = (JSONObject)result.get(id);
 		setTematresTerm(JSONterm, term);
 
@@ -276,7 +392,7 @@ public class TematresUtil
 		result = data.getJSONObject("result");
 
 		for(String relatedId : result.keySet()){
-			System.out.println("id: " + relatedId);
+
 			JSONterm = (JSONObject)result.get(relatedId);
 			TematresTerm newTerm = new TematresTerm();
 			

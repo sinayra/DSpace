@@ -87,8 +87,6 @@ public class ControlledVocabularyTag extends TagSupport
             String html = "";
             if (vocabulary != null && !vocabulary.equals(""))
             {
-				System.out.println("DEBUG -- ControlledVocabularyTag");
-				System.out.println(vocabulary);
 
 				if(vocabulary.equals("tematres")){
 					TematresUtil util = new TematresUtil();

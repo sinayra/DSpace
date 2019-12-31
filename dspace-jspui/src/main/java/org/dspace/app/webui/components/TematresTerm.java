@@ -33,7 +33,6 @@ public class TematresTerm
 
 	public void setName(String name){
 		this.name = name;
-		System.out.println("name: " + this.name);
 	}
 
 	public void setId(int id){
@@ -50,5 +49,11 @@ public class TematresTerm
 	
 	public String getName(){
 		return this.name;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		TematresTerm o = (TematresTerm) obj;
+		return o.id == this.id && o.isMetaTerm == this.isMetaTerm && o.name == this.name;
 	}
 }

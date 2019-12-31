@@ -11,6 +11,7 @@ import org.dspace.app.webui.components.TematresTerm;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 
 /**
  * Class for relationships between Tematres terms
@@ -20,13 +21,13 @@ import java.util.HashSet;
  */
 public class TematresTermDirectedGraph {
 	// contains set of nodes
-	private HashSet<NodeClass> nodes = new HashSet<TematresTermDirectedGraph.NodeClass>();
+	private HashSet<NodeClass> nodes = new HashSet<NodeClass>();
 
 	// set of directed edges
-	private HashSet<edgeContents> edges = new HashSet<TematresTermDirectedGraph.edgeContents>();
+	private HashSet<EdgeContents> edges = new HashSet<EdgeContents>();
 
 	// maps a nodeId -> node
-	private HashMap<TematresTerm, NodeClass> nodeMap = new HashMap<TematresTerm, TematresTermDirectedGraph.NodeClass>();
+	private HashMap<TematresTerm, NodeClass> nodeMap = new HashMap<TematresTerm, NodeClass>();
 
 	/**
 	 * @param graph
@@ -46,8 +47,8 @@ public class TematresTermDirectedGraph {
 		this.nodeMap.put(nodeToAdd.term, nodeToAdd);
 	}
 
-	public void addEdges(NodeClass startingNode, NodeClass finishingNode) {
-		edgeContents edge = new edgeContents(startingNode, finishingNode);
+	public void addEdges(NodeClass startingNode, NodeClass finishingNode, String relType) {
+		EdgeContents edge = new EdgeContents(startingNode, finishingNode, relType);
 		this.edges.add(edge);
 		startingNode.getEdges().add(edge);
 		this.nodes.add(startingNode);
@@ -77,8 +78,19 @@ public class TematresTermDirectedGraph {
 		return this.nodes;
 	}
 
-	public HashSet<edgeContents> getEdges() {
+	public HashSet<EdgeContents> getEdges() {
 		return this.edges;
+	}
+
+	public void setAllNodesNotVisited(){
+		Iterator<NodeClass> it = this.nodes.iterator();
+		
+		//setting every node to not visited
+		while(it.hasNext()){
+			NodeClass n = it.next();
+			n.setVisited(false);
+			n.setAddedToList(false);
+		}
 	}
 
 
@@ -89,11 +101,12 @@ public class TematresTermDirectedGraph {
 
 		private TematresTerm term;
 		private boolean visited;
-		private HashSet<edgeContents> edges;
+		private boolean addedToList;
+		private HashSet<EdgeContents> edges;
 
 		public NodeClass(TematresTerm term) {
 			this.term = term;
-			this.edges = new HashSet<TematresTermDirectedGraph.edgeContents>();
+			this.edges = new HashSet<EdgeContents>();
 		}
 
 		// copy constructor
@@ -110,7 +123,12 @@ public class TematresTermDirectedGraph {
 			return this.visited;
 		}
 
-		public HashSet<edgeContents> getEdges() {
+		public boolean getAddedToList() {
+			return this.addedToList;
+		}
+
+
+		public HashSet<EdgeContents> getEdges() {
 			return this.edges;
 		}
 		
@@ -118,16 +136,22 @@ public class TematresTermDirectedGraph {
 		    this.visited = visited;
 		}
 
+		public void setAddedToList(boolean addedToList){
+		    this.addedToList = addedToList;
+		}
+
 	}
 
 	// definition of arc a.k.a edge
-	public static class edgeContents {
+	public static class EdgeContents {
 		private NodeClass startingNode;
 		private NodeClass finishingNode;
+		private String relType;
 
-		public edgeContents(NodeClass startingNode, NodeClass finishingNode) {
+		public EdgeContents(NodeClass startingNode, NodeClass finishingNode, String relType) {
 			this.startingNode = startingNode;
 			this.finishingNode = finishingNode;
+			this.relType = relType;
 		}
 		
 		public NodeClass getStartingNode() {
@@ -138,10 +162,14 @@ public class TematresTermDirectedGraph {
 			return this.finishingNode;
 		}
 
+		public String getRelType() {
+			return this.relType;
+		}
+
 		@Override
 		public boolean equals(Object obj) {
-			edgeContents e = (edgeContents) obj;
-			return e.finishingNode == finishingNode && e.startingNode == startingNode;
+			EdgeContents e = (EdgeContents) obj;
+			return e.finishingNode == this.finishingNode && e.startingNode == this.startingNode;
 		}
 
 	}
