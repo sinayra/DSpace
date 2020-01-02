@@ -8,6 +8,10 @@
 !/.gitignore
 
 # track these files
+## Config
+!/dspace/config/dspace.cfg
+!/dspace/config/input-forms.xml
+
 ## Base Tematres
 !/dspace-jspui/src/main/java/org/dspace/app/webui/components/TematresTerm.java
 !/dspace-jspui/src/main/java/org/dspace/app/webui/components/TematresTermDirectedGraph.java
