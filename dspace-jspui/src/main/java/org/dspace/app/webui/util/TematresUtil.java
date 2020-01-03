@@ -277,6 +277,7 @@ public class TematresUtil
 		TematresTerm term = src.getTerm();
 		boolean hasRendered = false;
 		List<TematresTermDirectedGraph.NodeClass> relatedNodes = new ArrayList<TematresTermDirectedGraph.NodeClass>();
+		List<TematresTermDirectedGraph.NodeClass> specificNodes = new ArrayList<TematresTermDirectedGraph.NodeClass>();
 
 		if(!edgeSet.hasNext()){
 			html += getHierarchyHTML(false, term);
@@ -288,11 +289,8 @@ public class TematresUtil
 				TematresTermDirectedGraph.NodeClass n = relation.getFinishingNode();
 
 				if(!src.getVisited() && !(relation.getRelType().equals("TR"))){
-					html += getHierarchyHTML(true, term);
-					src.setVisited(true);
-					html += DFSRenderHTMLHelper(g, n);
-					html += "</ul>";
-					html += "</li>";
+					n.setAddedToList(true);
+					specificNodes.add(n);
 				}
 				else{
 					if(!n.getAddedToList() && !n.getVisited()){
@@ -300,6 +298,18 @@ public class TematresUtil
 						relatedNodes.add(n);
 					}
 				}
+			}
+			if(!specificNodes.isEmpty()){
+				Iterator<TematresTermDirectedGraph.NodeClass> it = specificNodes.iterator();
+				
+				html += getHierarchyHTML(true, term);
+				src.setVisited(true);
+				while(it.hasNext()){
+					TematresTermDirectedGraph.NodeClass n = it.next();
+					html += DFSRenderHTMLHelper(g, n);
+				}
+				html += "</ul>";
+				html += "</li>";
 			}
 			if(!relatedNodes.isEmpty()){
 				Iterator<TematresTermDirectedGraph.NodeClass> it = relatedNodes.iterator();
