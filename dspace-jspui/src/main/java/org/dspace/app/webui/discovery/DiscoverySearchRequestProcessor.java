@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Iterator;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -149,7 +148,6 @@ public class DiscoverySearchRequestProcessor implements SearchRequestProcessor
         DSpaceObject container;
         try
         {
-			System.out.println("------------GET SEARCH SCOPE--------");
             container = DiscoverUtility.getSearchScope(context,
                     request);
         }
@@ -157,14 +155,11 @@ public class DiscoverySearchRequestProcessor implements SearchRequestProcessor
         {
             throw new SearchProcessorException(e.getMessage(), e);
         }
-		System.out.println("------------GET DISCOVER QUERY1---------");
         DiscoverQuery queryArgs = DiscoverUtility.getDiscoverQuery(context,
                 request, container, false);
-		System.out.println("------------/GET DISCOVER QUERY1---------");
         String query = request.getParameter("query");
 
         // Perform the search
-		System.out.println("------------PERFORM THE SEARCH---------");
         DiscoverResult qResults = null;
         try
         {
@@ -236,7 +231,6 @@ public class DiscoverySearchRequestProcessor implements SearchRequestProcessor
             HttpServletResponse response) throws SearchProcessorException,
             IOException, ServletException
     {
-		System.out.println("------------DO SIMPLE SEARCH------------");
         init();
         List<Item> resultsItems;
         List<Collection> resultsCollections;
@@ -265,17 +259,14 @@ public class DiscoverySearchRequestProcessor implements SearchRequestProcessor
             String sortField = SearchUtils.getSearchService().toSortFieldIndex(
                     sortFieldConfiguration.getMetadataField(),
                     sortFieldConfiguration.getType());
-
             sortOptions.add(sortField);
         }
         request.setAttribute("sortOptions", sortOptions);
         
-		System.out.println("----- GET DISCOVERY QUERY -----");
         DiscoverQuery queryArgs = DiscoverUtility.getDiscoverQuery(context,
                 request, scope, true);
 
         queryArgs.setSpellCheck(discoveryConfiguration.isSpellCheckEnabled()); 
-
         
         List<DiscoverySearchFilterFacet> availableFacet = discoveryConfiguration
                 .getSidebarFacets();
@@ -365,57 +356,45 @@ public class DiscoverySearchRequestProcessor implements SearchRequestProcessor
         DiscoverResult qResults = null;
         try
         {
-			System.out.println("----QUERY ARGS getQuery()----");
-			System.out.println(queryArgs.getQuery());
-			Iterator<String> it = queryArgs.getQuerys().iterator();
+            qResults = SearchUtils.getSearchService().search(context, scope,
+                    queryArgs);
+            
+            List<Community> resultsListComm = new ArrayList<Community>();
+            List<Collection> resultsListColl = new ArrayList<Collection>();
+            List<Item> resultsListItem = new ArrayList<Item>();
 
-			List<Community> resultsListComm = new ArrayList<Community>();
-	        List<Collection> resultsListColl = new ArrayList<Collection>();
-	        List<Item> resultsListItem = new ArrayList<Item>();
+            for (DSpaceObject dso : qResults.getDspaceObjects())
+            {
+                if (dso instanceof Item)
+                {
+                    resultsListItem.add((Item) dso);
+                }
+                else if (dso instanceof Collection)
+                {
+                    resultsListColl.add((Collection) dso);
 
-			long pageTotal = 1;
-			long pageCurrent = 1;
-			
-			while(it.hasNext()){
-				queryArgs.setQuery(it.next());
-		        qResults = SearchUtils.getSearchService().search(context, scope,
-		                queryArgs);
-		        
-		        for (DSpaceObject dso : qResults.getDspaceObjects())
-		        {
-		            if (dso instanceof Item)
-		            {
-		                resultsListItem.add((Item) dso);
-		            }
-		            else if (dso instanceof Collection)
-		            {
-		                resultsListColl.add((Collection) dso);
+                }
+                else if (dso instanceof Community)
+                {
+                    resultsListComm.add((Community) dso);
+                }
+            }
 
-		            }
-		            else if (dso instanceof Community)
-		            {
-		                resultsListComm.add((Community) dso);
-		            }
-		        }
+            // Log
+            log.info(LogManager.getHeader(context, "search", "scope=" + scope
+                    + ",query=\"" + query + "\",results=("
+                    + resultsListComm.size() + ","
+                    + resultsListColl.size() + "," + resultsListItem.size()
+                    + ")"));
 
-		        // Log
-		        log.info(LogManager.getHeader(context, "search", "scope=" + scope
-		                + ",query=\"" + query + "\",results=("
-		                + resultsListComm.size() + ","
-		                + resultsListColl.size() + "," + resultsListItem.size()
-		                + ")"));
+            // Pass in some page qualities
+            // total number of pages
+            long pageTotal = 1 + ((qResults.getTotalSearchResults() - 1) / qResults
+                    .getMaxResults());
 
-		        // Pass in some page qualities
-		        // total number of pages
-		        pageTotal += ((qResults.getTotalSearchResults() - 1) / qResults
-		                .getMaxResults());
-
-		        // current page being displayed
-		        pageCurrent += (qResults.getStart() / qResults
-		                .getMaxResults());
-			}
-
-			queryArgs.setQuery(queryArgs.getQuerys().iterator().next());
+            // current page being displayed
+            long pageCurrent = 1 + (qResults.getStart() / qResults
+                    .getMaxResults());
 
             // pageLast = min(pageCurrent+3,pageTotal)
             long pageLast = ((pageCurrent + 3) > pageTotal) ? pageTotal

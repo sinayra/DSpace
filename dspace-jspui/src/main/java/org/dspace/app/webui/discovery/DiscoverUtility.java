@@ -12,9 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Iterator;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -40,8 +37,6 @@ import org.dspace.discovery.configuration.DiscoverySortFieldConfiguration;
 import org.dspace.handle.factory.HandleServiceFactory;
 import org.dspace.handle.service.HandleService;
 
-import org.dspace.app.webui.util.TematresUtil;
-
 public class DiscoverUtility
 {
     /** log4j category */
@@ -64,25 +59,20 @@ public class DiscoverUtility
     {
         // Get the location parameter, if any
         String location = request.getParameter("location");
-
         if (location == null)
         {
             if (UIUtil.getCollectionLocation(request) != null)
             {
-				System.out.println("getCollectionLocation");
                 return UIUtil.getCollectionLocation(request);
             }
             if (UIUtil.getCommunityLocation(request) != null)
             {
-				System.out.println("getCommunityLocation");
                 return UIUtil.getCommunityLocation(request);
             }
-			
             return null;
         }
         HandleService handleService = HandleServiceFactory.getInstance().getHandleService();
         DSpaceObject scope = handleService.resolveToObject(context, location);
-
         return scope;
     }
 
@@ -235,32 +225,13 @@ public class DiscoverUtility
             DiscoveryConfiguration discoveryConfiguration,
             HttpServletRequest request, DiscoverQuery queryArgs)
     {
-		TematresUtil util = new TematresUtil();
-		List<String> querys = queryArgs.getQuerys();
         // Get the query
-		System.out.println("----- SETUP A BASIC QUERY -----");
         String query = request.getParameter("query");
-
-		if(util.isTematresSearch(query)){
-			List<String> relatedList = util.getRelatedList(query);
-			Iterator<String> it = relatedList.iterator();
-
-			while(it.hasNext()){
-				querys.add(it.next());
-			}
-
-			it = querys.iterator();
-			while(it.hasNext()){
-				System.out.println(it.next());
-			}
-			
-		}
         if (StringUtils.isNotBlank(query))
         {
             // Escape any special characters in this user-entered query
             query = escapeQueryChars(query);
             queryArgs.setQuery(query);
-			querys.add(query);
         }
 
         List<String> defaultFilterQueries = discoveryConfiguration
