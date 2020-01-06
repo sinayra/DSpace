@@ -48,6 +48,31 @@ public class TematresUtil
 	private final String PLUS_IMAGE = "/jspui/image/controlledvocabulary/p.gif";
 	private final String FINAL_IMAGE = "/jspui/image/controlledvocabulary/f.gif";
 
+	private TematresTermDirectedGraph graph;
+	private static TematresUtil instance;
+	
+	
+	/**
+     * Set tematres vocabulary graph
+     * 
+     */
+	private TematresUtil(){
+		HashMap<Integer, TematresTerm> terms = getAllTerms();
+		this.graph = createAllHierarchyRelations(terms);
+	}
+
+	/**
+     * Get singleton instance for the util
+     * 
+     * @return a TematresUtil with a working graph
+     */
+	public static TematresUtil getInstance(){
+		if(instance == null){
+			instance = new TematresUtil();		
+		}
+
+		return instance;
+	}
 
     /**
      * Get Response from URL
@@ -341,15 +366,11 @@ public class TematresUtil
      */
 	public String renderAllTermsAsHTML(){
 		String html = "";
-		HashMap<Integer, TematresTerm> terms = getAllTerms();
-		TematresTermDirectedGraph g = createAllHierarchyRelations(terms);
-		TematresTermDirectedGraph.NodeClass motherNode = findMother(g);
+		TematresTermDirectedGraph.NodeClass motherNode = findMother(this.graph);
 
 		
 		html += "<ul class=\"controlledvocabulary\">";
-
-		html += DFSRenderHTML(g, motherNode);
-		
+		html += DFSRenderHTML(this.graph, motherNode);
 		html += "</ul>";
 		
 		return html;

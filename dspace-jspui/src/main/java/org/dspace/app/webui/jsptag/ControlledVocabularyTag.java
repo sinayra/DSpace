@@ -89,7 +89,7 @@ public class ControlledVocabularyTag extends TagSupport
             {
 
 				if(vocabulary.equals("tematres")){
-					TematresUtil util = new TematresUtil();
+					TematresUtil util = TematresUtil.getInstance();
 					
 					html = util.renderAllTermsAsHTML();
 
