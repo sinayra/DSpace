@@ -36,6 +36,7 @@ import org.dspace.app.webui.search.SearchProcessorException;
 import org.dspace.app.webui.search.SearchRequestProcessor;
 import org.dspace.app.webui.util.JSPManager;
 import org.dspace.app.webui.util.UIUtil;
+import org.dspace.app.webui.util.TematresUtil;
 import org.dspace.authorize.factory.AuthorizeServiceFactory;
 import org.dspace.authorize.service.AuthorizeService;
 import org.dspace.content.Collection;
@@ -236,6 +237,7 @@ public class DiscoverySearchRequestProcessor implements SearchRequestProcessor
         List<Collection> resultsCollections;
         List<Community> resultsCommunities;
         DSpaceObject scope;
+		TematresUtil util = TematresUtil.getInstance();
         try
         {
             scope = DiscoverUtility.getSearchScope(context, request);
@@ -284,6 +286,9 @@ public class DiscoverySearchRequestProcessor implements SearchRequestProcessor
         request.setAttribute("etal", etal);
 
         String query = request.getParameter("query");
+		if(util.isTematresSearch(query)){
+			queryArgs.setQuerys(util.getRelatedList(query));
+		}
         request.setAttribute("query", query);
         request.setAttribute("queryArgs", queryArgs);
         List<DiscoverySearchFilter> availableFilters = discoveryConfiguration

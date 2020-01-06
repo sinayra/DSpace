@@ -68,6 +68,7 @@ public class TematresUtil
      */
 	public static TematresUtil getInstance(){
 		if(instance == null){
+			System.out.println("INSTANCE IS NULL");
 			instance = new TematresUtil();		
 		}
 
@@ -141,8 +142,7 @@ public class TematresUtil
      */
 	private TematresTermDirectedGraph createAllHierarchyRelations(HashMap<Integer, TematresTerm> terms){
 		TematresTermDirectedGraph g = new TematresTermDirectedGraph();
-		String args ="task=relationsSince&arg=2019-12-05";
-		JSONObject data = getResponseData(args);
+		JSONObject data = getResponseData("task=relationsSince&arg=2019-12-05");
 		JSONArray result = data.getJSONArray("result");
 
 		Iterator<Object> it = result.iterator();
@@ -199,8 +199,7 @@ public class TematresUtil
      */
 	private HashMap<Integer, TematresTerm> getAllTerms(){
 		HashMap<Integer, TematresTerm> terms = new HashMap<Integer, TematresTerm>();
-		String args ="task=termsSince&arg=2019-12-05";
-		JSONObject data = getResponseData(args);
+		JSONObject data = getResponseData("task=termsSince&arg=2019-12-05");
 		JSONObject result = data.getJSONObject("result");
 		
 		for(String id : result.keySet()){
@@ -272,7 +271,7 @@ public class TematresUtil
 		return mother;
 	}
 
-	private String getHierarchyHTML(boolean hasHierarchy, TematresTerm term){
+	private String renderTermHTML(boolean hasHierarchy, TematresTerm term){
 		String html = "";
 
 		if(hasHierarchy){
@@ -296,7 +295,7 @@ public class TematresUtil
      * 
      */
 
-	private String DFSRenderHTMLHelper(TematresTermDirectedGraph g, TematresTermDirectedGraph.NodeClass src){
+	private String renderHTMLHelper(TematresTermDirectedGraph g, TematresTermDirectedGraph.NodeClass src){
 		Iterator<TematresTermDirectedGraph.EdgeContents> edgeSet = src.getEdges().iterator();
 		String html = "";
 		TematresTerm term = src.getTerm();
@@ -305,7 +304,7 @@ public class TematresUtil
 		List<TematresTermDirectedGraph.NodeClass> specificNodes = new ArrayList<TematresTermDirectedGraph.NodeClass>();
 
 		if(!edgeSet.hasNext()){
-			html += getHierarchyHTML(false, term);
+			html += renderTermHTML(false, term);
 			src.setVisited(true);
 		}
 		else{
@@ -327,11 +326,11 @@ public class TematresUtil
 			if(!specificNodes.isEmpty()){
 				Iterator<TematresTermDirectedGraph.NodeClass> it = specificNodes.iterator();
 				
-				html += getHierarchyHTML(true, term);
+				html += renderTermHTML(true, term);
 				src.setVisited(true);
 				while(it.hasNext()){
 					TematresTermDirectedGraph.NodeClass n = it.next();
-					html += DFSRenderHTMLHelper(g, n);
+					html += renderHTMLHelper(g, n);
 				}
 				html += "</ul>";
 				html += "</li>";
@@ -340,10 +339,10 @@ public class TematresUtil
 				Iterator<TematresTermDirectedGraph.NodeClass> it = relatedNodes.iterator();
 				while(it.hasNext()){
 					TematresTermDirectedGraph.NodeClass n = it.next();
-					html += DFSRenderHTMLHelper(g, n);
+					html += renderHTMLHelper(g, n);
 
 					if(!n.getVisited()){
-						html += getHierarchyHTML(false, n.getTerm());
+						html += renderTermHTML(false, n.getTerm());
 						n.setVisited(true);
 					}
 				}
@@ -353,9 +352,9 @@ public class TematresUtil
 		return html;
 	}
 
-	private	String DFSRenderHTML(TematresTermDirectedGraph g, TematresTermDirectedGraph.NodeClass src){
+	private	String renderHTML(TematresTermDirectedGraph g, TematresTermDirectedGraph.NodeClass src){
 		g.setAllNodesNotVisited();
-		String html = DFSRenderHTMLHelper(g, src);
+		String html = renderHTMLHelper(g, src);
 		return html;
 	}
 	
@@ -370,7 +369,7 @@ public class TematresUtil
 
 		
 		html += "<ul class=\"controlledvocabulary\">";
-		html += DFSRenderHTML(this.graph, motherNode);
+		html += renderHTML(this.graph, motherNode);
 		html += "</ul>";
 		
 		return html;
@@ -382,8 +381,8 @@ public class TematresUtil
      * @return if there is a result for the search
      */
 	public boolean isTematresSearch(String query){
-		String args ="task=fetch&arg=" + query;
-		JSONObject data = getResponseData(args);
+
+		JSONObject data = getResponseData("task=fetch&arg=" + query);
 
 		try{
 			JSONObject result = data.getJSONObject("result");
@@ -406,30 +405,34 @@ public class TematresUtil
      * @return a list of terms name
      */
 	public List<String> getRelatedList(String query){
+		TematresTermDirectedGraph.NodeClass srcNode = null;
 		List<String> names = new ArrayList<String>();
+		String id = "";
+		JSONObject data = null, result = null, JSONterm = null;
+		TematresTerm srcTerm = null;
+		Iterator<TematresTermDirectedGraph.NodeClass> it = null;
 
-		String args ="task=fetch&arg=" + query;
-		JSONObject data = getResponseData(args);
-		JSONObject result = data.getJSONObject("result");
-		TematresTerm term = new TematresTerm();
 
-		String id = result.keySet().iterator().next();
-
-		JSONObject JSONterm = (JSONObject)result.get(id);
-		setTematresTerm(JSONterm, term);
-
-		args = "task=fetchRelated&arg=" + term.getId();
-		data = getResponseData(args);
+		data = getResponseData("task=fetch&arg=" + query);
 		result = data.getJSONObject("result");
+		srcTerm = new TematresTerm();
+		id = result.keySet().iterator().next();
+		JSONterm = (JSONObject)result.get(id);
+		setTematresTerm(JSONterm, srcTerm);
 
-		for(String relatedId : result.keySet()){
+		if(this.graph.containsParticularNode(srcTerm)){
+			this.graph.setAllNodesNotVisited();
+			srcNode = this.graph.getParticularNode(srcTerm);
+			DFS(srcNode);
+			
+			it = this.graph.getAllNodes().iterator();
+			while(it.hasNext()){
+				TematresTermDirectedGraph.NodeClass n = it.next();
 
-			JSONterm = (JSONObject)result.get(relatedId);
-			TematresTerm newTerm = new TematresTerm();
-			
-			setTematresTerm(JSONterm, newTerm);			
-			
-			names.add(newTerm.getName());
+				if(n.getVisited()){
+					names.add(n.getTerm().getName());
+				}
+			}
 		}
 		
 		return names;

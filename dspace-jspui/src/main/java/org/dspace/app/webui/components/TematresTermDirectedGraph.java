@@ -27,7 +27,7 @@ public class TematresTermDirectedGraph {
 	private HashSet<EdgeContents> edges = new HashSet<EdgeContents>();
 
 	// maps a nodeId -> node
-	private HashMap<TematresTerm, NodeClass> nodeMap = new HashMap<TematresTerm, NodeClass>();
+	private HashMap<Integer, NodeClass> nodeMap = new HashMap<Integer, NodeClass>();
 
 	/**
 	 * @param graph
@@ -37,14 +37,14 @@ public class TematresTermDirectedGraph {
 	public NodeClass addNode(TematresTerm nodeTerm) {
 		NodeClass nodeToAdd = new NodeClass(nodeTerm);
 		this.nodes.add(nodeToAdd);
-		this.nodeMap.put(nodeTerm, nodeToAdd);
+		this.nodeMap.put(nodeTerm.getId(), nodeToAdd);
 
 		return nodeToAdd;
 	}
 
 	public void addNode(NodeClass nodeToAdd) {
 		this.nodes.add(nodeToAdd);
-		this.nodeMap.put(nodeToAdd.term, nodeToAdd);
+		this.nodeMap.put(nodeToAdd.term.getId(), nodeToAdd);
 	}
 
 	public void addEdges(NodeClass startingNode, NodeClass finishingNode, String relType) {
@@ -54,24 +54,24 @@ public class TematresTermDirectedGraph {
 		this.nodes.add(startingNode);
 	}
 
-	public HashMap<TematresTerm, NodeClass> getNodeMap() {
+	public HashMap<Integer, NodeClass> getNodeMap() {
 		return nodeMap;
 	}
 
-	public void setNodeMap(HashMap<TematresTerm, NodeClass> nodeMap) {
+	public void setNodeMap(HashMap<Integer, NodeClass> nodeMap) {
 		this.nodeMap = nodeMap;
 	}
 
 	public NodeClass getParticularNode(TematresTerm term) {
-		if (this.nodeMap.containsKey(term)){
-			return this.nodeMap.get(term);
+		if (this.nodeMap.containsKey(term.getId())){
+			return this.nodeMap.get(term.getId());
 		}
 
 		return null;
 	}
 
 	public boolean containsParticularNode(TematresTerm term) {
-		return this.nodeMap.containsKey(term);
+		return this.nodeMap.containsKey(term.getId());
 	}
 
 	public HashSet<NodeClass> getAllNodes() {
@@ -138,6 +138,12 @@ public class TematresTermDirectedGraph {
 
 		public void setAddedToList(boolean addedToList){
 		    this.addedToList = addedToList;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			NodeClass t = (NodeClass) obj;
+			return t.term == this.term;
 		}
 
 	}

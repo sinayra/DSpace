@@ -24,3 +24,4 @@
 !/dspace-api/src/main/java/org/dspace/discovery/DiscoverQuery.java
 !/dspace-jspui/src/main/java/org/dspace/app/webui/discovery/DiscoverUtility.java
 !/dspace-jspui/src/main/java/org/dspace/app/webui/discovery/DiscoverySearchRequestProcessor.java
+!/dspace-api/src/main/java/org/dspace/discovery/SolrServiceImpl.java
