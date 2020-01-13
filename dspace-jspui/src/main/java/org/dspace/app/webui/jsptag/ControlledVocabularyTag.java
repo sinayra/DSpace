@@ -252,10 +252,6 @@ public class ControlledVocabularyTag extends TagSupport
         {
             Map<String, String> parameters = new HashMap<>();
             parameters.put("filter", filter);
-			log.debug("Debug usando logger");
-			log.debug(vocabulary.toString());
-			System.out.println("Debug usando system.out.println");
-			System.out.println(vocabulary.toString());
             return XMLUtil.transformDocument(vocabulary, parameters, vocabularyPrunningXSLT);
         }
         catch (Exception e)
@@ -315,16 +311,6 @@ public class ControlledVocabularyTag extends TagSupport
         return controlledVocabularies;
 
     }
-
-	/**
-     * Loads into memory all the vocabularies found in the given directory. All
-     * files with .xml extension are considered to be controlled vocabularies.
-     * 
-     * @param directory
-     *            where the files are positioned
-     * @return an hashtable with the filenames of the vocabularies as keys and
-     *         the XML documents representing the vocabularies as values.
-     */
 
     /**
      * Gets the filter provided as parameter to the tag
