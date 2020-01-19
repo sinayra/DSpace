@@ -6,8 +6,10 @@ O README original deste projeto pode ser acessado no repositório original do [D
 # Instalação
 ## Dependências
 Antes de começar a instalar as dependências, certifique que seu computador esteja atualizado:
-`sudo apt update`
-`sudo apt upgrade`
+```
+sudo apt update
+sudo apt upgrade
+```
 
 ### Dependências do Tematres
 * Apache
@@ -19,10 +21,15 @@ Antes de começar a instalar as dependências, certifique que seu computador est
 
 #### MySQL
 `sudo apt install mysql-server`
+
 Em seguida, instale o MySQL e crie um usuário **root** para acessar o mysql.
+
 `sudo mysql_secure_installation`
+
 Crie um super-usuário **root** que seja capaz de fornecer privilégios para outras contas de usuário:
+
 `mysql -u root -p`
+
 
 ```sql
 DROP USER 'root'@'localhost';
@@ -86,11 +93,11 @@ Clone este repositório nesta branch:
 `git clone --branch dspace-tematres https://github.com/esw-gama/DSpace.git`
 
 Na pasta raiz, execute:
-`
-mvn -U package
-`
+
+`mvn -U package`
+
 Após este processo, na pasta */dspace/target/dspace-installer*, execute:
-`
-sudo ant fresh_install
-`
+
+`sudo ant fresh_install`
+
 Para finalizar a instalação, copie os webapps gerados para a pasta de webapps do Tomcat.
